@@ -1,0 +1,107 @@
+----match, group-------------------------------------------------------------------------------------
+db.orders.insertMany( [
+  { _id: 0, productName: "Steel beam", status: "new", quantity: 10 },
+  { _id: 1, productName: "Steel beam", status: "urgent", quantity: 20 },
+  { _id: 2, productName: "Steel beam", status: "urgent", quantity: 30 },
+  { _id: 3, productName: "Iron rod", status: "new", quantity: 15 },
+  { _id: 4, productName: "Iron rod", status: "urgent", quantity: 50 },
+  { _id: 5, productName: "Iron rod", status: "urgent", quantity: 10 }
+] )
+
+
+db.orders.aggregate( [
+  { $match: { status: "urgent" } },
+  { $group: { _id: "$productName", sumQuantity: { $sum: "$quantity" } } }
+] )
+
+[
+{ _id: 'Steel beam', sumQuantity: 50 },
+{ _id: 'Iron rod', sumQuantity: 60 }
+]
+
+----limit--------------------------------------------------------------------------------------------------
+db.article.aggregate([
+  { $limit : 5 }
+]);
+
+----skip--------
+db.article.aggregate([
+   { $skip : 5 }
+]);
+
+----unwind--------------------------------------------------------------------------------------------------
+db.inventory.insertOne({ "_id" : 1, "item" : "ABC1", sizes: [ "S", "M", "L"] })
+db.inventory.aggregate( [ { $unwind : "$sizes" } ] )
+
+{ "_id" : 1, "item" : "ABC1", "sizes" : "S" }
+{ "_id" : 1, "item" : "ABC1", "sizes" : "M" }
+{ "_id" : 1, "item" : "ABC1", "sizes" : "L" }
+
+
+----project--------------------------------------------------------------------------------------------------
+{
+ "_id" : 1,
+ title: "abc123",
+ isbn: "0001122223334",
+ author: { last: "zzz", first: "aaa" },
+ copies: 5
+}
+
+db.books.aggregate( [ { $project : { title : 1 , author : 1 } } ] )
+
+{ "_id" : 1, "title" : "abc123", "author" : { "last" : "zzz", "first" : "aaa" } }
+
+100Mb limit
+
+----count----------------------------------------------------------------------------------------------------
+{ "_id" : 1, "subject" : "History", "score" : 88 }
+{ "_id" : 2, "subject" : "History", "score" : 92 }
+{ "_id" : 3, "subject" : "History", "score" : 97 }
+{ "_id" : 4, "subject" : "History", "score" : 71 }
+{ "_id" : 5, "subject" : "History", "score" : 79 }
+{ "_id" : 6, "subject" : "History", "score" : 83 }
+
+db.scores.aggregate(
+ [
+   {
+     $match: {
+       score: {
+         $gt: 80
+       }
+     }
+   },
+   {
+     $count: "passing_scores"
+   }
+ ]
+)
+
+{ "passing_scores" : 4 }
+
+----type--------------------------------------------------------------------------------------------------
+db.addressBook.insertMany(
+  [
+     { "_id" : 1, address : "2030 Martian Way", zipCode : "90698345" },
+     { "_id" : 2, address: "156 Lunar Place", zipCode : 43339374 },
+     { "_id" : 3, address : "2324 Pluto Place", zipCode: NumberLong(3921412) },
+     { "_id" : 4, address : "55 Saturn Ring" , zipCode : NumberInt(88602117) },
+     { "_id" : 5, address : "104 Venus Drive", zipCode : ["834847278", "1893289032"]}
+  ]
+)
+
+db.addressBook.find( { "zipCode" : { $type : 2 } } );
+db.addressBook.find( { "zipCode" : { $type : "string" } } );
+
+{ "_id" : 1, "address" : "2030 Martian Way", "zipCode" : "90698345" }
+{ "_id" : 5, "address" : "104 Venus Drive", "zipCode" : [ "834847278", "1893289032" ] }
+
+----sort--------------------------------------------------------------------------------------------------
+db.students.insertOne( { "_id" : 2, "tests" : [  89,  70,  89,  50 ] } )
+
+db.students.updateOne(
+  { _id: 2 },
+  { $push: { tests: { $each: [ 40, 60 ], $sort: 1 } } }
+)
+
+{ "_id" : 2, "tests" : [  40,  50,  60,  70,  89,  89 ] }
+ 
